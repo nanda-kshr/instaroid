@@ -1,7 +1,5 @@
 // Server-side logger specifically for API routes
 import { NextRequest } from 'next/server'
-import fs from 'fs'
-import path from 'path'
 
 interface LogEntry {
   timestamp: string
@@ -14,31 +12,18 @@ interface LogEntry {
 }
 
 class FileLogger {
-  private logDirectory: string = './logs'
-  private jsonLogFile: string = 'app.log'
-  private readableLogFile: string = 'app-readable.log'
-  private errorLogFile: string = 'errors.log'
+  private logBuffer: LogEntry[] = []
+  private maxBufferSize: number = 1000
 
   constructor() {
-    this.ensureLogDirectory()
+    // Pure in-memory logger - no file operations
   }
 
-  private ensureLogDirectory() {
-    try {
-      if (!fs.existsSync(this.logDirectory)) {
-        fs.mkdirSync(this.logDirectory, { recursive: true })
-      }
-    } catch (error) {
-      console.error('Failed to create log directory:', error)
-    }
-  }
-
-  private writeToFile(filename: string, content: string) {
-    try {
-      const logPath = path.join(this.logDirectory, filename)
-      fs.appendFileSync(logPath, content + '\n')
-    } catch (error) {
-      console.error(`Failed to write to ${filename}:`, error)
+  private addToBuffer(logEntry: LogEntry) {
+    this.logBuffer.push(logEntry)
+    
+    if (this.logBuffer.length > this.maxBufferSize) {
+      this.logBuffer = this.logBuffer.slice(-this.maxBufferSize)
     }
   }
 
@@ -128,16 +113,8 @@ class FileLogger {
       }
     }
 
-    // Write JSON log
-    this.writeToFile(this.jsonLogFile, JSON.stringify(enhancedEntry))
-    
-    // Write readable log
-    this.writeToFile(this.readableLogFile, this.formatReadableLog(enhancedEntry))
-    
-    // Write to error log if it's an error
-    if (logEntry.level === 'ERROR') {
-      this.writeToFile(this.errorLogFile, this.formatReadableLog(enhancedEntry))
-    }
+    // Store in buffer
+    this.addToBuffer(enhancedEntry)
     
     // Console output with colors
     const colors = {
@@ -151,6 +128,16 @@ class FileLogger {
     const reset = '\x1b[0m'
     
     console.log(`${color}${this.formatReadableLog(enhancedEntry)}${reset}`)
+  }
+
+  // Get logs from buffer
+  getLogs(): LogEntry[] {
+    return [...this.logBuffer]
+  }
+
+  // Clear log buffer
+  clearLogs() {
+    this.logBuffer = []
   }
 
   // Convenience methods

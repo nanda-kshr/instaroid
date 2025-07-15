@@ -1,7 +1,4 @@
 // Log levels
-import fs from 'fs'
-import path from 'path'
-
 export enum LogLevel {
   ERROR = 0,
   WARN = 1,
@@ -21,26 +18,11 @@ export interface LogEntry {
 
 class Logger {
   private logLevel: LogLevel = LogLevel.INFO
-  private logDirectory: string = './logs'
-  private logFile: string = 'app.log'
-  private maxLogSize: number = 10 * 1024 * 1024 // 10MB
-  private maxLogFiles: number = 5
+  private logBuffer: LogEntry[] = []
+  private maxBufferSize: number = 1000
 
   constructor() {
-    this.ensureLogDirectory()
-  }
-
-  private ensureLogDirectory() {
-    // Only run on server side
-    if (typeof window === 'undefined') {
-      try {
-        if (!fs.existsSync(this.logDirectory)) {
-          fs.mkdirSync(this.logDirectory, { recursive: true })
-        }
-      } catch (error) {
-        console.error('Failed to create log directory:', error)
-      }
-    }
+    // Pure client-side logger - no file operations
   }
 
   private formatLogEntry(level: LogLevel, message: string, data?: Record<string, unknown>, component?: string): LogEntry {
@@ -84,61 +66,12 @@ class Logger {
            Math.random().toString(36).substring(2, 15)
   }
 
-  private writeToFile(logEntry: LogEntry) {
-    // Only write to file on server side
-    if (typeof window === 'undefined') {
-      try {
-        const logPath = path.join(this.logDirectory, this.logFile)
-        const logLine = JSON.stringify(logEntry) + '\n'
-        
-        // Check if file exists and its size
-        if (fs.existsSync(logPath)) {
-          const stats = fs.statSync(logPath)
-          if (stats.size > this.maxLogSize) {
-            this.rotateLogFile()
-          }
-        }
-        
-        fs.appendFileSync(logPath, logLine)
-      } catch (error) {
-        console.error('Failed to write to log file:', error)
-      }
-    }
-  }
-
-  private rotateLogFile() {
-    // Only rotate on server side
-    if (typeof window === 'undefined') {
-      try {
-        const baseName = this.logFile.replace('.log', '')
-        const extension = '.log'
-        
-        // Rotate existing files
-        for (let i = this.maxLogFiles - 1; i >= 1; i--) {
-          const currentFile = path.join(this.logDirectory, `${baseName}.${i}${extension}`)
-          const nextFile = path.join(this.logDirectory, `${baseName}.${i + 1}${extension}`)
-          
-          if (fs.existsSync(currentFile)) {
-            if (i === this.maxLogFiles - 1) {
-              // Delete the oldest file
-              fs.unlinkSync(currentFile)
-            } else {
-              // Move to next position
-              fs.renameSync(currentFile, nextFile)
-            }
-          }
-        }
-        
-        // Move current log file to .1
-        const currentLog = path.join(this.logDirectory, this.logFile)
-        const firstBackup = path.join(this.logDirectory, `${baseName}.1${extension}`)
-        
-        if (fs.existsSync(currentLog)) {
-          fs.renameSync(currentLog, firstBackup)
-        }
-      } catch (error) {
-        console.error('Failed to rotate log file:', error)
-      }
+  private writeToBuffer(logEntry: LogEntry) {
+    // Add to buffer and maintain max size
+    this.logBuffer.push(logEntry)
+    
+    if (this.logBuffer.length > this.maxBufferSize) {
+      this.logBuffer = this.logBuffer.slice(-this.maxBufferSize)
     }
   }
 
@@ -162,11 +95,19 @@ class Logger {
         logEntry.data ? logEntry.data : ''
       )
       
-      // Write to file (only on server side or when explicitly enabled)
-      if (typeof window === 'undefined' || process.env.NODE_ENV === 'development') {
-        this.writeToFile(logEntry)
-      }
+      // Store in buffer for debugging/monitoring
+      this.writeToBuffer(logEntry)
     }
+  }
+
+  // Get logs from buffer (useful for debugging)
+  getLogs(): LogEntry[] {
+    return [...this.logBuffer]
+  }
+
+  // Clear log buffer
+  clearLogs() {
+    this.logBuffer = []
   }
 
   // Public logging methods
