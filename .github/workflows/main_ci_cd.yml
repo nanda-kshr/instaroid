@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.YOUR_GCP_PROJECT_ID }}
+  GCP_ZONE: ${{ secrets.YOUR_GCP_ZONE }}
+  INSTANCE_NAME: mahi
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+  IMAGE_NAME: instaroid
+  APP_PORT: 3000
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PAT }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Authenticate Google Cloud CLI
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Google Compute Engine via SSH
+        run: |
+          gcloud compute ssh ${{ env.INSTANCE_NAME }} --zone=${{ env.GCP_ZONE }} --project=${{ env.PROJECT_ID }} --command="\
+            sudo docker stop ${{ env.IMAGE_NAME }} || true && \
+            sudo docker rm ${{ env.IMAGE_NAME }} || true && \
+            sudo docker rmi ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest || true && \
+            sudo docker pull ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest && \
+            sudo docker run -d --name ${{ env.IMAGE_NAME }} -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
