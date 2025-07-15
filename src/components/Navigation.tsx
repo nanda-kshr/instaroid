@@ -1,15 +1,29 @@
+'use client'
+import { useLogger } from '@/hooks/useLogger'
+
 export default function Navigation() {
+  const logger = useLogger('Navigation')
+  
   const navItems = [
     { label: 'BROWSE', color: 'from-red-500 to-red-600', icon: '🖼️' },
     { label: 'COLLECTIONS', color: 'from-orange-500 to-red-500', icon: '📚' },
     { label: 'CART', color: 'from-pink-500 to-red-400', icon: '🛒' }
   ]
 
+  const handleNavClick = (item: typeof navItems[0]) => {
+    logger.logButtonClick('Navigation', { 
+      label: item.label, 
+      icon: item.icon,
+      action: 'navigate_to_section'
+    })
+  }
+
   return (
     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 space-y-4">
       {navItems.map((item, index) => (
         <button
           key={index}
+          onClick={() => handleNavClick(item)}
           className={`anime-nav-button bg-gradient-to-r ${item.color} text-white font-bold py-4 px-8 rounded-r-full text-lg italic transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-3 group relative overflow-hidden`}
         >
           {/* Anime-style background effect */}

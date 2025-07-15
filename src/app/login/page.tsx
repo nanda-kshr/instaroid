@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { useLogger } from '@/hooks/useLogger'
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true)
@@ -10,18 +11,65 @@ export default function Login() {
     password: '',
     name: ''
   })
+  
+  const logger = useLogger('Login')
+
+  useEffect(() => {
+    logger.info('Login page loaded', { isLogin })
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    logger.logFormSubmit({
+      formType: isLogin ? 'login' : 'register',
+      hasEmail: !!formData.email,
+      hasPassword: !!formData.password,
+      hasName: !!formData.name
+    })
+    
+    logger.logAsyncOperation('Authentication', 'start', { 
+      type: isLogin ? 'login' : 'register',
+      email: formData.email 
+    })
+    
     // TODO: Implement authentication logic
     console.log('Form submitted:', formData)
+    
+    // Simulate async operation
+    setTimeout(() => {
+      logger.logAsyncOperation('Authentication', 'success', { 
+        type: isLogin ? 'login' : 'register' 
+      })
+    }, 1000)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    
+    logger.userAction('Form Field Change', { 
+      field: name, 
+      hasValue: !!value,
+      formType: isLogin ? 'login' : 'register'
+    })
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     })
+  }
+
+  const toggleFormType = (newIsLogin: boolean) => {
+    logger.userAction('Toggle Form Type', { 
+      from: isLogin ? 'login' : 'register',
+      to: newIsLogin ? 'login' : 'register'
+    })
+    setIsLogin(newIsLogin)
+  }
+
+  const handleSocialLogin = (provider: 'google' | 'github') => {
+    logger.userAction('Social Login Attempt', { provider })
+    // TODO: Implement social login
   }
 
   return (
@@ -43,7 +91,7 @@ export default function Login() {
             <>
               Or{' '}
               <button
-                onClick={() => setIsLogin(false)}
+                onClick={() => toggleFormType(false)}
                 className="font-medium text-purple-600 hover:text-purple-500"
               >
                 create a new account
@@ -53,7 +101,7 @@ export default function Login() {
             <>
               Already have an account?{' '}
               <button
-                onClick={() => setIsLogin(true)}
+                onClick={() => toggleFormType(true)}
                 className="font-medium text-purple-600 hover:text-purple-500"
               >
                 Sign in
@@ -170,6 +218,7 @@ export default function Login() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={() => handleSocialLogin('google')}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with Google</span>
@@ -180,6 +229,7 @@ export default function Login() {
 
               <button
                 type="button"
+                onClick={() => handleSocialLogin('github')}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with GitHub</span>

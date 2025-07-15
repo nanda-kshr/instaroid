@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { useLogger } from '@/hooks/useLogger'
 
 type ThemeKey = 'jujutsu' | 'cricket' | 'actors' | 'songs' | 'games'
 
@@ -181,8 +182,15 @@ interface PolaroidCardProps {
 function PolaroidCard({ polaroid, config, isAnimating, index }: PolaroidCardProps) {
   const [dimensions, setDimensions] = useState<ImageDimensions>({ width: 280, height: 350 })
   const imgRef = useRef<HTMLImageElement>(null)
+  const logger = useLogger('PolaroidCard')
 
   const handleImageLoad = () => {
+    logger.debug('Image loaded', { 
+      polaroidId: polaroid.id, 
+      src: polaroid.image,
+      index 
+    })
+    
     if (imgRef.current) {
       const { naturalWidth, naturalHeight } = imgRef.current
       
@@ -224,7 +232,23 @@ function PolaroidCard({ polaroid, config, isAnimating, index }: PolaroidCardProp
         width: Math.round(scaledWidth),
         height: Math.round(scaledHeight)
       })
+      
+      logger.debug('Image dimensions calculated', {
+        polaroidId: polaroid.id,
+        finalDimensions: { width: Math.round(scaledWidth), height: Math.round(scaledHeight) },
+        originalDimensions: { width: naturalWidth, height: naturalHeight }
+      })
     }
+  }
+
+  const handleCardClick = () => {
+    logger.userAction('Polaroid Click', {
+      polaroidId: polaroid.id,
+      price: polaroid.price,
+      image: polaroid.image,
+      index,
+      config: config.position
+    })
   }
 
   const getShadowOffset = () => {
@@ -257,6 +281,7 @@ function PolaroidCard({ polaroid, config, isAnimating, index }: PolaroidCardProp
     >
       <div
         className="bg-white p-4 transition-all duration-500 hover:scale-105 cursor-pointer"
+        onClick={handleCardClick}
         style={{
           width: dimensions.width,
           height: dimensions.height
@@ -288,14 +313,21 @@ interface PolaroidGalleryProps {
 
 export default function PolaroidGallery({ currentTheme = 0 }: PolaroidGalleryProps) {
   const [isAnimating, setIsAnimating] = useState(false)
+  const logger = useLogger('PolaroidGallery')
   const themeKeys = Object.keys(polaroidData) as ThemeKey[]
   const currentThemeKey = themeKeys[currentTheme % themeKeys.length]
 
   useEffect(() => {
+    logger.info('Theme changed', { 
+      themeIndex: currentTheme,
+      themeName: currentThemeKey,
+      totalThemes: themeKeys.length
+    })
+    
     setIsAnimating(true)
     const timer = setTimeout(() => setIsAnimating(false), 500)
     return () => clearTimeout(timer)
-  }, [currentTheme])
+  }, [currentTheme, currentThemeKey, logger])
 
   return (
     <div className="relative w-full h-full">
