@@ -1,0 +1,44 @@
+name: Deploy to GCP Instance
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PAT }}
+
+    - name: Build Docker image
+      run: docker build . -t ${{ secrets.DOCKER_USERNAME }}/instaroid:latest
+
+    - name: Push Docker image to Docker Hub
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/instaroid:latest
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+
+    - name: Deploy to GCP Instance
+      run: |
+        gcloud compute ssh gcp@heavy-server \
+          --zone=${{ secrets.YOUR_GCP_ZONE }} \
+          --project=${{ secrets.YOUR_GCP_PROJECT_ID }} \
+          --command="\
+            mkdir -p /var/log/instaroid && \
+            docker rmi -f ${{ secrets.DOCKER_USERNAME }}/instaroid:latest || true && \
+            docker pull ${{ secrets.DOCKER_USERNAME }}/instaroid:latest && \
+            docker stop instaroid-container || true && \
+            docker rm instaroid-container || true && \
+            docker run -d -p 3000:3000 --name instaroid-container -v /var/log/instaroid:/logs ${{ secrets.DOCKER_USERNAME }}/instaroid:latest"
