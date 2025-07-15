@@ -61,4 +61,4 @@ jobs:
         # Using semicolons to chain commands
         SSH_COMMAND="docker stop ${CONTAINER_NAME} && docker rm ${CONTAINER_NAME} || true; docker rmi -f ${IMAGE_NAME} || true; docker pull ${IMAGE_NAME}; docker run -d -p $(shuf -i 3000-5000 -n 1):3000 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
         
-        gcloud compute ssh ${INSTANCE_NAME} --zone=${GCP_ZONE} --project=${GCP_PROJECT} --command="${SSH_COMMAND}"
+        gcloud compute ssh nandakishorep@${INSTANCE_NAME} --zone=${GCP_ZONE} --project=${GCP_PROJECT} --command="${SSH_COMMAND}"
