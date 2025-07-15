@@ -19,13 +19,13 @@ export function useLogger(componentName: string) {
 
   return {
     // Basic logging methods
-    error: (message: string, data?: any) => clientLogger.error(message, data, componentName),
-    warn: (message: string, data?: any) => clientLogger.warn(message, data, componentName),
-    info: (message: string, data?: any) => clientLogger.info(message, data, componentName),
-    debug: (message: string, data?: any) => clientLogger.debug(message, data, componentName),
+    error: (message: string, data?: Record<string, unknown>) => clientLogger.error(message, data, componentName),
+    warn: (message: string, data?: Record<string, unknown>) => clientLogger.warn(message, data, componentName),
+    info: (message: string, data?: Record<string, unknown>) => clientLogger.info(message, data, componentName),
+    debug: (message: string, data?: Record<string, unknown>) => clientLogger.debug(message, data, componentName),
     
     // Specialized logging methods
-    userAction: (action: string, data?: any) => clientLogger.userAction(action, data, componentName),
+    userAction: (action: string, data?: Record<string, unknown>) => clientLogger.userAction(action, data, componentName),
     apiCall: (method: string, url: string, status?: number, duration?: number) => 
       clientLogger.apiCall(method, url, status, duration, componentName),
     
@@ -33,11 +33,11 @@ export function useLogger(componentName: string) {
     time: (label: string) => clientLogger.time(label, componentName),
     
     // Component-specific helpers
-    logFormSubmit: (formData: any) => {
+    logFormSubmit: (formData: Record<string, unknown>) => {
       clientLogger.userAction('Form Submit', { formData }, componentName)
     },
     
-    logButtonClick: (buttonName: string, data?: any) => {
+    logButtonClick: (buttonName: string, data?: Record<string, unknown>) => {
       clientLogger.userAction('Button Click', { buttonName, ...data }, componentName)
     },
     
@@ -45,7 +45,7 @@ export function useLogger(componentName: string) {
       clientLogger.userAction('Navigation', { to, from }, componentName)
     },
     
-    logError: (error: Error, context?: any) => {
+    logError: (error: Error, context?: Record<string, unknown>) => {
       clientLogger.error('Component Error', {
         error: error.message,
         stack: error.stack,
@@ -53,7 +53,7 @@ export function useLogger(componentName: string) {
       }, componentName)
     },
     
-    logAsyncOperation: (operation: string, status: 'start' | 'success' | 'error', data?: any) => {
+    logAsyncOperation: (operation: string, status: 'start' | 'success' | 'error', data?: Record<string, unknown>) => {
       if (status === 'start') {
         clientLogger.info(`Async Operation Started: ${operation}`, data, componentName)
       } else if (status === 'success') {
@@ -94,10 +94,7 @@ export function usePerformanceLogger(componentName: string) {
     
     measureRender: () => {
       const renderTimer = clientLogger.time('Component Render', componentName)
-      
-      useEffect(() => {
-        renderTimer.end()
-      })
+      return renderTimer
     }
   }
 }

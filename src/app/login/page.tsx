@@ -16,7 +16,7 @@ export default function Login() {
 
   useEffect(() => {
     logger.info('Login page loaded', { isLogin })
-  }, [])
+  }, [isLogin, logger])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

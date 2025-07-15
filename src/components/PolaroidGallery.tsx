@@ -327,7 +327,7 @@ export default function PolaroidGallery({ currentTheme = 0 }: PolaroidGalleryPro
     setIsAnimating(true)
     const timer = setTimeout(() => setIsAnimating(false), 500)
     return () => clearTimeout(timer)
-  }, [currentTheme, currentThemeKey, logger])
+  }, [currentTheme, currentThemeKey, logger, themeKeys.length])
 
   return (
     <div className="relative w-full h-full">

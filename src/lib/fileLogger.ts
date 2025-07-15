@@ -1,11 +1,13 @@
 // Server-side logger specifically for API routes
 import { NextRequest } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 
 interface LogEntry {
   timestamp: string
   level: string
   message: string
-  data?: any
+  data?: Record<string, unknown>
   component?: string
   userId?: string
   sessionId?: string
@@ -23,7 +25,6 @@ class FileLogger {
 
   private ensureLogDirectory() {
     try {
-      const fs = require('fs')
       if (!fs.existsSync(this.logDirectory)) {
         fs.mkdirSync(this.logDirectory, { recursive: true })
       }
@@ -34,8 +35,6 @@ class FileLogger {
 
   private writeToFile(filename: string, content: string) {
     try {
-      const fs = require('fs')
-      const path = require('path')
       const logPath = path.join(this.logDirectory, filename)
       fs.appendFileSync(logPath, content + '\n')
     } catch (error) {
@@ -66,7 +65,7 @@ class FileLogger {
     return formatted
   }
 
-  private formatDataForReading(data: any): string {
+  private formatDataForReading(data: Record<string, unknown>): string {
     if (!data || typeof data !== 'object') return JSON.stringify(data)
     
     const parts: string[] = []
@@ -92,10 +91,11 @@ class FileLogger {
       parts.push(`form: ${data.formType}`)
     }
     
-    if (data.clientInfo) {
-      const { userAgent, ip, sessionId } = data.clientInfo
-      if (sessionId) parts.push(`session: ${sessionId.slice(0, 8)}...`)
-      if (ip && ip !== '::1') parts.push(`ip: ${ip}`)
+    if (data.clientInfo && typeof data.clientInfo === 'object') {
+      const clientInfo = data.clientInfo as Record<string, unknown>
+      const { ip, sessionId } = clientInfo
+      if (sessionId && typeof sessionId === 'string') parts.push(`session: ${sessionId.slice(0, 8)}...`)
+      if (ip && typeof ip === 'string' && ip !== '::1') parts.push(`ip: ${ip}`)
     }
     
     if (data.error) {
@@ -154,19 +154,19 @@ class FileLogger {
   }
 
   // Convenience methods
-  error(message: string, data?: any, component?: string, request?: NextRequest) {
+  error(message: string, data?: Record<string, unknown>, component?: string, request?: NextRequest) {
     this.logEntry({ timestamp: '', level: 'ERROR', message, data, component }, request)
   }
 
-  warn(message: string, data?: any, component?: string, request?: NextRequest) {
+  warn(message: string, data?: Record<string, unknown>, component?: string, request?: NextRequest) {
     this.logEntry({ timestamp: '', level: 'WARN', message, data, component }, request)
   }
 
-  info(message: string, data?: any, component?: string, request?: NextRequest) {
+  info(message: string, data?: Record<string, unknown>, component?: string, request?: NextRequest) {
     this.logEntry({ timestamp: '', level: 'INFO', message, data, component }, request)
   }
 
-  debug(message: string, data?: any, component?: string, request?: NextRequest) {
+  debug(message: string, data?: Record<string, unknown>, component?: string, request?: NextRequest) {
     this.logEntry({ timestamp: '', level: 'DEBUG', message, data, component }, request)
   }
 }

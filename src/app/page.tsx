@@ -16,7 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     logger.info('Home page loaded', { initialSlide: currentSlide })
-  }, [])
+  }, [currentSlide, logger])
 
   const handleSlideChange = (slideIndex: number) => {
     logger.userAction('Slide Change', { 

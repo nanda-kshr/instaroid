@@ -1,4 +1,7 @@
 // Log levels
+import fs from 'fs'
+import path from 'path'
+
 export enum LogLevel {
   ERROR = 0,
   WARN = 1,
@@ -10,7 +13,7 @@ export interface LogEntry {
   timestamp: string
   level: string
   message: string
-  data?: any
+  data?: Record<string, unknown>
   component?: string
   userId?: string
   sessionId?: string
@@ -31,7 +34,6 @@ class Logger {
     // Only run on server side
     if (typeof window === 'undefined') {
       try {
-        const fs = require('fs')
         if (!fs.existsSync(this.logDirectory)) {
           fs.mkdirSync(this.logDirectory, { recursive: true })
         }
@@ -41,7 +43,7 @@ class Logger {
     }
   }
 
-  private formatLogEntry(level: LogLevel, message: string, data?: any, component?: string): LogEntry {
+  private formatLogEntry(level: LogLevel, message: string, data?: Record<string, unknown>, component?: string): LogEntry {
     const timestamp = new Date().toISOString()
     const levelNames = ['ERROR', 'WARN', 'INFO', 'DEBUG']
     
@@ -86,9 +88,6 @@ class Logger {
     // Only write to file on server side
     if (typeof window === 'undefined') {
       try {
-        const fs = require('fs')
-        const path = require('path')
-        
         const logPath = path.join(this.logDirectory, this.logFile)
         const logLine = JSON.stringify(logEntry) + '\n'
         
@@ -111,9 +110,6 @@ class Logger {
     // Only rotate on server side
     if (typeof window === 'undefined') {
       try {
-        const fs = require('fs')
-        const path = require('path')
-        
         const baseName = this.logFile.replace('.log', '')
         const extension = '.log'
         
@@ -146,7 +142,7 @@ class Logger {
     }
   }
 
-  private log(level: LogLevel, message: string, data?: any, component?: string) {
+  private log(level: LogLevel, message: string, data?: Record<string, unknown>, component?: string) {
     if (level <= this.logLevel) {
       const logEntry = this.formatLogEntry(level, message, data, component)
       
@@ -174,19 +170,19 @@ class Logger {
   }
 
   // Public logging methods
-  error(message: string, data?: any, component?: string) {
+  error(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.ERROR, message, data, component)
   }
 
-  warn(message: string, data?: any, component?: string) {
+  warn(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.WARN, message, data, component)
   }
 
-  info(message: string, data?: any, component?: string) {
+  info(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.INFO, message, data, component)
   }
 
-  debug(message: string, data?: any, component?: string) {
+  debug(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.DEBUG, message, data, component)
   }
 
@@ -213,7 +209,7 @@ class Logger {
   }
 
   // User action logging
-  userAction(action: string, data?: any, component?: string) {
+  userAction(action: string, data?: Record<string, unknown>, component?: string) {
     this.info(`User Action: ${action}`, data, component)
   }
 
@@ -228,7 +224,7 @@ class Logger {
   }
 
   // Component lifecycle logging
-  componentMount(componentName: string, props?: any) {
+  componentMount(componentName: string, props?: Record<string, unknown>) {
     this.debug(`Component Mounted: ${componentName}`, props, componentName)
   }
 
@@ -237,7 +233,7 @@ class Logger {
   }
 
   // Error boundary logging
-  errorBoundary(error: Error, errorInfo: any, component?: string) {
+  errorBoundary(error: Error, errorInfo: Record<string, unknown>, component?: string) {
     this.error('Error Boundary Caught Error', {
       error: error.message,
       stack: error.stack,

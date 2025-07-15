@@ -6,7 +6,7 @@ interface LogEntry {
   timestamp: string
   level: string
   message: string
-  data?: any
+  data?: Record<string, unknown>
   component?: string
   userId?: string
   sessionId?: string

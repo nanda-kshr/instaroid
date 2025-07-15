@@ -23,7 +23,7 @@ class ClientLogger {
     }, this.flushInterval)
   }
 
-  private formatLogEntry(level: LogLevel, message: string, data?: any, component?: string): LogEntry {
+  private formatLogEntry(level: LogLevel, message: string, data?: Record<string, unknown>, component?: string): LogEntry {
     const timestamp = new Date().toISOString()
     const levelNames = ['ERROR', 'WARN', 'INFO', 'DEBUG']
     
@@ -98,7 +98,7 @@ class ClientLogger {
     }
   }
 
-  private log(level: LogLevel, message: string, data?: any, component?: string) {
+  private log(level: LogLevel, message: string, data?: Record<string, unknown>, component?: string) {
     if (level <= this.logLevel) {
       const logEntry = this.formatLogEntry(level, message, data, component)
       
@@ -125,19 +125,19 @@ class ClientLogger {
   }
 
   // Public logging methods
-  error(message: string, data?: any, component?: string) {
+  error(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.ERROR, message, data, component)
   }
 
-  warn(message: string, data?: any, component?: string) {
+  warn(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.WARN, message, data, component)
   }
 
-  info(message: string, data?: any, component?: string) {
+  info(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.INFO, message, data, component)
   }
 
-  debug(message: string, data?: any, component?: string) {
+  debug(message: string, data?: Record<string, unknown>, component?: string) {
     this.log(LogLevel.DEBUG, message, data, component)
   }
 
@@ -164,7 +164,7 @@ class ClientLogger {
   }
 
   // User action logging
-  userAction(action: string, data?: any, component?: string) {
+  userAction(action: string, data?: Record<string, unknown>, component?: string) {
     this.info(`User Action: ${action}`, data, component)
   }
 
@@ -179,7 +179,7 @@ class ClientLogger {
   }
 
   // Component lifecycle logging
-  componentMount(componentName: string, props?: any) {
+  componentMount(componentName: string, props?: Record<string, unknown>) {
     this.debug(`Component Mounted: ${componentName}`, props, componentName)
   }
 
