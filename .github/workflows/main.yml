@@ -1,0 +1,55 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/instaroid:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/instaroid:latest
+
+      - name: Authenticate Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.YOUR_GCP_PROJECT_ID }}
+
+      - name: Deploy to GCP Instance
+        run: |
+          INSTANCE_NAME="heavy-server"
+          ZONE="${{ secrets.YOUR_GCP_ZONE }}"
+          DOCKER_IMAGE="${{ secrets.DOCKER_USERNAME }}/instaroid:latest"
+          CONTAINER_NAME="instaroid-container"
+          HOST_LOG_PATH="/logs/app.log" # Host path for logs
+          CONTAINER_LOG_PATH="/app/logs/app.log" # Container path for logs
+
+          # The full command to run on the remote instance
+          # This command stops and removes the existing container, removes the old image,
+          # pulls the new image, creates the host log directory, and runs a new container.
+          SSH_COMMAND="sudo docker stop ${CONTAINER_NAME} || true && \
+                        sudo docker rm ${CONTAINER_NAME} || true && \
+                        sudo docker rmi -f ${DOCKER_IMAGE} || true && \
+                        sudo docker pull ${DOCKER_IMAGE} && \
+                        sudo mkdir -p $(dirname ${HOST_LOG_PATH}) && \
+                        sudo docker run -d --name ${CONTAINER_NAME} -p 3000:3000 -v ${HOST_LOG_PATH}:${CONTAINER_LOG_PATH} ${DOCKER_IMAGE}"
+
+          gcloud compute ssh gcp@${INSTANCE_NAME} --zone=${ZONE} --command="${SSH_COMMAND}" --tunnel-through-iap
